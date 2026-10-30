@@ -91,7 +91,7 @@ function periodo() {
 
 // ---------- vagas por horário ----------
 // As vagas são por pessoa ("Procurar por"): cada serviço ocupa 1 vaga durante TODAS as horas
-// da sua duração (Instalação/Manutenção 2h, Desinstalação 1h) na agenda daquela pessoa.
+// da sua duração (Instalação 2h, Desinstalação e Manutenção 1h) na agenda daquela pessoa.
 // Um horário só está livre se, em cada hora que o serviço ocuparia, ainda houver vaga.
 const horasDe = (horario, servico) =>
   Array.from({ length: duracaoServico(servico) }, (_, k) => horaInt(horario) + k);
@@ -167,7 +167,6 @@ function atualizaHorarios(todos, excludeId, preferido) {
     }
     f.horario.appendChild(o);
   });
-  $('expediente').textContent = `Expediente de ${contato}: ${textoExpediente(contato)} (almoço bloqueado)`;
   if (atual && [...f.horario.options].some(o => o.value === atual)) f.horario.value = atual;
   if (f.horario.selectedOptions[0]?.disabled) {
     const livre = [...f.horario.options].find(o => !o.disabled);

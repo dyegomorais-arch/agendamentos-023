@@ -1,4 +1,6 @@
 const RED = [176, 30, 40], INK = [38, 40, 44], SOFT = [242, 243, 245];
+// horário no PDF de confirmação do agendamento: só o início (ex.: 15:00h), sem intervalo, para não confundir. O PDF do técnico continua com a faixa.
+const horarioPdf = a => horaDe(horaInt(a.horario)) + 'h';
 const fmt = iso => iso.split('-').reverse().join('/');
 const semana = iso => ['Domingo','Segunda-feira','Terça-feira','Quarta-feira','Quinta-feira','Sexta-feira','Sábado'][new Date(iso + 'T12:00').getDay()];
 
@@ -50,7 +52,7 @@ function gerarPdfConfirmacao(a) {
     body: [
       ['Serviço', a.servico], ['Empresa', a.empresa],
       ['Placa', a.placa], ['Tag', a.tag || '-'], ['Tipo de veículo', a.veiculo],
-      ['Data', fmt(a.data) + ' (' + semana(a.data) + ')'], ['Horário', faixaHorario(a)], ['Status', a.status], ['Alta', a.alta || '-'],
+      ['Data', fmt(a.data) + ' (' + semana(a.data) + ')'], ['Horário', horarioPdf(a)], ['Status', a.status], ['Alta', a.alta || '-'],
       ['Agendado por', a.criadoPor || '-'],
       ...(a.atualizadoPor ? [['Última alteração', a.atualizadoPor]] : [])
     ]
