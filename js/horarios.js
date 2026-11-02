@@ -1,6 +1,6 @@
 // Regras de horário e dados de cada pessoa (usado por agenda.js e pdf.js)
 // Duração de cada serviço, em horas
-const DURACAO_SERVICO = { 'Instalação': 2, 'Desinstalação': 1, 'Manutenção': 1 };
+const DURACAO_SERVICO = { 'Instalação': 2, 'Desinstalação': 1, 'Manutenção': 2 };
 
 // Cada pessoa ("Procurar por") tem seu local, endereço e expediente.
 // expediente = [[início, fim], ...] em horas; o intervalo entre os turnos é o almoço (bloqueado).

@@ -1,6 +1,18 @@
+// Baixa o PDF direto para a pasta de downloads, sem abrir em nova aba/visualizador.
+// (tipo "octet-stream" + atributo download impedem o navegador de abrir o arquivo sozinho)
+function salvarPdf(doc, nome) {
+  const blob = new Blob([doc.output('arraybuffer')], { type: 'application/octet-stream' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = nome; a.style.display = 'none';
+  document.body.appendChild(a); a.click();
+  setTimeout(() => { a.remove(); URL.revokeObjectURL(url); }, 1500);
+}
+
 const RED = [176, 30, 40], INK = [38, 40, 44], SOFT = [242, 243, 245];
-// horário no PDF de confirmação do agendamento: só o início (ex.: 15:00h), sem intervalo, para não confundir. O PDF do técnico continua com a faixa.
-const horarioPdf = a => horaDe(horaInt(a.horario)) + 'h';
+// Localização da Sillion no CI (São Luís) no Google Maps: o link aparece no PDF só para o CI
+const MAPS_CI = 'https://www.google.com/maps/place/SILLION+SERV+TECN+LTDA/@-2.5618834,-44.3167166,19z/data=!4m6!3m5!1s0x7f68f1329797569:0x8d6a53bd5ac830b3!8m2!3d-2.5617585!4d-44.3163439!16s%2Fg%2F11y49thtzq?authuser=0&entry=ttu&g_ep=EgoyMDI2MTAyOC4wIKXMDSoASAFQAw%3D%3D';
+const ehCI = l => String(l || '').trim().toUpperCase() === 'CI - CENTRO DE INSTALAÇÕES';
 const fmt = iso => iso.split('-').reverse().join('/');
 const semana = iso => ['Domingo','Segunda-feira','Terça-feira','Quarta-feira','Quinta-feira','Sexta-feira','Sábado'][new Date(iso + 'T12:00').getDay()];
 
@@ -52,7 +64,7 @@ function gerarPdfConfirmacao(a) {
     body: [
       ['Serviço', a.servico], ['Empresa', a.empresa],
       ['Placa', a.placa], ['Tag', a.tag || '-'], ['Tipo de veículo', a.veiculo],
-      ['Data', fmt(a.data) + ' (' + semana(a.data) + ')'], ['Horário', horarioPdf(a)], ['Status', a.status], ['Alta', a.alta || '-'],
+      ['Data', fmt(a.data) + ' (' + semana(a.data) + ')'], ['Horário', faixaHorario(a)], ['Status', a.status], ['Alta', a.alta || '-'],
       ['Agendado por', a.criadoPor || '-'],
       ...(a.atualizadoPor ? [['Última alteração', a.atualizadoPor]] : [])
     ]
@@ -62,7 +74,8 @@ function gerarPdfConfirmacao(a) {
     let y = doc.lastAutoTable.finalY + 12;
     const locL = doc.splitTextToSize('Local: ' + a.local, 168);
     const endL = doc.splitTextToSize('Endereço: ' + a.endereco, 168);
-    const boxH = 22 + (locL.length + endL.length) * 5 + 8;
+    const ci = ehCI(a.local), ex = ci ? 10 : 0; // com o link do mapa a caixa fica 10 mm mais alta
+    const boxH = 22 + (locL.length + endL.length) * 5 + 8 + ex;
     doc.setFillColor(...SOFT).roundedRect(14, y, 182, boxH, 3, 3, 'F');
     doc.setFillColor(...RED).rect(14, y, 3, boxH, 'F');
     doc.setFont('helvetica', 'bold').setFontSize(12).setTextColor(...INK).text('Onde comparecer', 22, y + 9);
@@ -71,6 +84,21 @@ function gerarPdfConfirmacao(a) {
     doc.text(locL, 22, yy); yy += locL.length * 5 + 2;
     doc.text(endL, 22, yy); yy += endL.length * 5 + 4;
     doc.setFont('helvetica', 'bold').text('Procurar por: ' + a.contato, 22, yy);
+
+    // Só no CI: pino de GPS + link "Clique aqui" para o Google Maps
+    if (ci) {
+      const px = 25, py = yy + 6.6;
+      doc.setFillColor(...RED);
+      doc.triangle(px - 1.5, py + 0.9, px + 1.5, py + 0.9, px, py + 4.2, 'F');
+      doc.circle(px, py, 2, 'F');
+      doc.setFillColor(255, 255, 255).circle(px, py, 0.8, 'F');
+      const txt = 'Clique aqui para abrir a localização no Google Maps';
+      doc.setFont('helvetica', 'bold').setFontSize(10).setTextColor(...RED);
+      const tw = doc.getTextWidth(txt);
+      doc.textWithLink(txt, 30, yy + 9, { url: MAPS_CI });
+      doc.setDrawColor(...RED).setLineWidth(0.3).line(30, yy + 10.2, 30 + tw, yy + 10.2);
+      doc.link(22, yy + 3, 8 + tw, 9, { url: MAPS_CI });
+    }
 
     doc.setFont('helvetica', 'normal').setFontSize(9).setTextColor(109, 112, 118)
       .text('Chegue com antecedência e apresente esta confirmação no atendimento.', 14, y + boxH + 12);
@@ -115,7 +143,7 @@ function gerarPdfConfirmacao(a) {
   }
 
   rodape(doc);
-  doc.save(a.placa + ' ' + fmt(a.data).replace(/\//g, '-') + '.pdf'); // barra não vale em nome de arquivo
+  salvarPdf(doc, a.placa + ' ' + fmt(a.data).replace(/\//g, '-') + '.pdf'); // barra não vale em nome de arquivo
 }
 
 function gerarPdfTecnico(periodo, itens) {
@@ -135,5 +163,5 @@ function gerarPdfTecnico(periodo, itens) {
   rodape(doc);
   const d = iso => fmt(iso).replace(/\//g, '-'); // barra não vale em nome de arquivo
   const nomeArq = ini === '0000-00-00' ? 'AGENDA' : umDia ? 'AGENDA ' + d(ini) : 'AGENDA ' + d(ini) + ' a ' + d(fim);
-  doc.save(nomeArq + '.pdf');
+  salvarPdf(doc, nomeArq + '.pdf');
 }
