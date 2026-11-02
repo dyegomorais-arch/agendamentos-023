@@ -70,7 +70,7 @@ document.addEventListener('click', e => {
 
 // ---------- vagas por horário ----------
 // As vagas são por pessoa ("Procurar por"): cada serviço ocupa 1 vaga durante TODAS as horas
-// da sua duração (Instalação/Manutenção 2h, Desinstalação 1h) na agenda daquela pessoa.
+// da sua duração (Instalação 2h; Desinstalação e Manutenção 1h) na agenda daquela pessoa.
 const horasDe = (horario, servico) =>
   Array.from({ length: duracaoServico(servico) }, (_, k) => horaInt(horario) + k);
 
